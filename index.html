@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Understanding Market Cap: An Interactive Guide</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Calm Neutrals (Background: #f5f5f4, Text: #374151, Accents: #60a5fa, #2dd4bf) -->
+    <!-- Application Structure Plan: A thematic, single-page educational journey. Starts with a hands-on calculator for the core definition, moves to classifying companies by size (Large/Mid/Small cap), then visualizes why this classification matters (risk/growth), and ends by clarifying common myths. This step-by-step, interactive approach is designed for a complete beginner, making an abstract concept tangible and memorable. -->
+    <!-- Visualization & Content Choices: 1. Core Concept (Market Cap Formula) -> Goal: Inform/Engage -> Viz: Interactive Calculator -> Interaction: User inputs share price/count to see live calculation -> Justification: Active learning is more effective than passive reading. -> Method: Vanilla JS. 2. Company Sizes -> Goal: Organize/Compare -> Viz: Three-card layout with visual meters (HTML/CSS) -> Interaction: Buttons reveal US company examples -> Justification: Categorizes information clearly and provides relatable, real-world context. -> Method: HTML/CSS + JS toggle. 3. Importance (Risk/Growth) -> Goal: Compare/Relationships -> Viz: Interactive Bar/Bubble Chart -> Interaction: Toggle between 'Size Comparison' and 'Risk/Growth Profile' views -> Justification: Visually demonstrates the core trade-offs investors consider. -> Library: Chart.js. 4. Misconceptions -> Goal: Inform/Clarify -> Viz: Myth vs. Fact cards -> Interaction: Static display -> Justification: Directly addresses and corrects common errors in understanding. -> Method: HTML/CSS. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f5f5f4;
+            color: #374151;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+        .nav-button {
+            transition: all 0.3s ease;
+        }
+        .nav-button.active {
+            background-color: #60a5fa;
+            color: white;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+        .content-section {
+            display: none;
+        }
+        .content-section.active {
+            display: block;
+        }
+        .slider-track {
+            background: #e5e7eb;
+        }
+        .slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #60a5fa;
+            cursor: pointer;
+            border-radius: 50%;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #60a5fa;
+            cursor: pointer;
+            border-radius: 50%;
+            margin-top: -6px;
+        }
+        input[type=range]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: #60a5fa;
+            cursor: pointer;
+            border-radius: 50%;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <header class="bg-white shadow-sm sticky top-0 z-10">
+        <nav class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <h1 class="text-xl md:text-2xl font-bold text-slate-800">Market Cap Explained</h1>
+            <div class="hidden md:flex items-center space-x-2">
+                <button data-target="calculator" class="nav-button active px-4 py-2 rounded-full text-sm font-medium">Calculator</button>
+                <button data-target="tiers" class="nav-button px-4 py-2 rounded-full text-sm font-medium">Size Tiers</button>
+                <button data-target="importance" class="nav-button px-4 py-2 rounded-full text-sm font-medium">Why It Matters</button>
+                <button data-target="myths" class="nav-button px-4 py-2 rounded-full text-sm font-medium">Myths vs. Facts</button>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container mx-auto p-4 md:p-8">
+        
+        <section id="calculator" class="content-section active">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl md:text-4xl font-bold mb-2">What is Market Capitalization?</h2>
+                <p class="max-w-3xl mx-auto text-slate-600">Market Cap is the total dollar value of a company's shares of stock. Think of it as the price you'd pay to buy the entire company at its current stock price. Use the interactive calculator below to see how it works.</p>
+            </div>
+
+            <div class="max-w-4xl mx-auto bg-white p-6 md:p-8 rounded-2xl shadow-lg">
+                <div class="grid md:grid-cols-2 gap-8 items-center">
+                    <div class="space-y-6">
+                        <div>
+                            <label for="sharePrice" class="block font-medium mb-2">Current Share Price: <span id="sharePriceValue" class="font-bold text-blue-500">$50</span></label>
+                            <input type="range" id="sharePrice" min="1" max="2000" value="50" class="w-full h-2 rounded-lg cursor-pointer slider-track slider-thumb">
+                        </div>
+                        <div>
+                            <label for="outstandingShares" class="block font-medium mb-2">Outstanding Shares: <span id="sharesValue" class="font-bold text-blue-500">100 Million</span></label>
+                            <input type="range" id="outstandingShares" min="1" max="10000" value="100" class="w-full h-2 rounded-lg cursor-pointer slider-track slider-thumb">
+                        </div>
+                    </div>
+                    <div class="text-center bg-stone-100 p-8 rounded-xl">
+                        <p class="text-slate-600 text-lg">Total Market Cap is</p>
+                        <p id="marketCapResult" class="text-4xl md:text-5xl font-bold text-slate-800 break-words mt-2">$5.00 Billion</p>
+                        <p class="text-sm text-slate-500 mt-4"><span id="formulaText" class="font-mono">$50 x 100,000,000 shares</span></p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="tiers" class="content-section">
+             <div class="text-center mb-12">
+                <h2 class="text-3xl md:text-4xl font-bold mb-2">The Size Tiers</h2>
+                <p class="max-w-3xl mx-auto text-slate-600">In the U.S. market, companies are typically grouped into categories based on their market cap. This helps investors quickly understand a company's size and general characteristics.</p>
+            </div>
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="bg-white p-6 rounded-2xl shadow-lg flex flex-col">
+                    <div class="text-center">
+                        <span class="text-5xl">🏢</span>
+                        <h3 class="text-2xl font-bold mt-4">Large-Cap</h3>
+                        <p class="font-semibold text-blue-500 mt-1">Over $10 Billion</p>
+                    </div>
+                    <p class="text-slate-600 mt-4 flex-grow">These are the giants of the stock market. They are typically well-established, stable companies that are leaders in their industries. Many are household names.</p>
+                    <div class="mt-6">
+                        <p class="text-sm font-medium">Risk/Growth Profile:</p>
+                        <div class="w-full bg-gray-200 rounded-full h-2.5 mt-1">
+                          <div class="bg-teal-500 h-2.5 rounded-full" style="width: 25%"></div>
+                        </div>
+                        <p class="text-xs text-slate-500 text-center mt-1">Lower Risk, Slower Growth</p>
+                    </div>
+                    <button class="toggle-examples mt-6 w-full bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold py-2 px-4 rounded-full transition-colors">Show Examples</button>
+                    <div class="examples hidden mt-4 text-sm bg-slate-50 p-3 rounded-lg">
+                        Apple, Microsoft, Amazon, Alphabet (Google)
+                    </div>
+                </div>
+                 <div class="bg-white p-6 rounded-2xl shadow-lg flex flex-col">
+                    <div class="text-center">
+                        <span class="text-5xl">🏭</span>
+                        <h3 class="text-2xl font-bold mt-4">Mid-Cap</h3>
+                        <p class="font-semibold text-blue-500 mt-1">$2 Billion to $10 Billion</p>
+                    </div>
+                    <p class="text-slate-600 mt-4 flex-grow">These are established companies that are often in a growth phase. They offer a blend of the stability of large-caps and the growth potential of small-caps.</p>
+                     <div class="mt-6">
+                        <p class="text-sm font-medium">Risk/Growth Profile:</p>
+                        <div class="w-full bg-gray-200 rounded-full h-2.5 mt-1">
+                          <div class="bg-teal-500 h-2.5 rounded-full" style="width: 50%"></div>
+                        </div>
+                         <p class="text-xs text-slate-500 text-center mt-1">Moderate Risk & Growth</p>
+                    </div>
+                    <button class="toggle-examples mt-6 w-full bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold py-2 px-4 rounded-full transition-colors">Show Examples</button>
+                     <div class="examples hidden mt-4 text-sm bg-slate-50 p-3 rounded-lg">
+                        Domino's Pizza, Williams-Sonoma, DraftKings
+                    </div>
+                </div>
+                 <div class="bg-white p-6 rounded-2xl shadow-lg flex flex-col">
+                    <div class="text-center">
+                        <span class="text-5xl">🚀</span>
+                        <h3 class="text-2xl font-bold mt-4">Small-Cap</h3>
+                        <p class="font-semibold text-blue-500 mt-1">$300 Million to $2 Billion</p>
+                    </div>
+                    <p class="text-slate-600 mt-4 flex-grow">These are smaller, up-and-coming companies. They have significant potential for growth, but this often comes with higher volatility and risk compared to larger companies.</p>
+                     <div class="mt-6">
+                        <p class="text-sm font-medium">Risk/Growth Profile:</p>
+                        <div class="w-full bg-gray-200 rounded-full h-2.5 mt-1">
+                          <div class="bg-teal-500 h-2.5 rounded-full" style="width: 85%"></div>
+                        </div>
+                         <p class="text-xs text-slate-500 text-center mt-1">Higher Risk, Higher Growth Potential</p>
+                    </div>
+                    <button class="toggle-examples mt-6 w-full bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold py-2 px-4 rounded-full transition-colors">Show Examples</button>
+                     <div class="examples hidden mt-4 text-sm bg-slate-50 p-3 rounded-lg">
+                        Crocs, Shake Shack, iRobot
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="importance" class="content-section">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl md:text-4xl font-bold mb-2">Why Does Market Cap Matter?</h2>
+                <p class="max-w-3xl mx-auto text-slate-600">Market cap is more than just a number; it's a critical tool for investors to quickly gauge a company's size, potential risk, and growth prospects. It helps in building a balanced investment strategy.</p>
+            </div>
+
+            <div class="bg-white p-6 md:p-8 rounded-2xl shadow-lg">
+                <div class="text-center mb-6">
+                    <div class="inline-flex rounded-full bg-slate-100 p-1">
+                        <button id="sizeViewBtn" class="px-4 py-2 text-sm font-semibold rounded-full bg-white text-blue-600 shadow">Size Comparison</button>
+                        <button id="riskViewBtn" class="px-4 py-2 text-sm font-semibold rounded-full text-slate-600">Risk & Growth</button>
+                    </div>
+                </div>
+                <div class="grid md:grid-cols-5 gap-8 items-center">
+                    <div class="md:col-span-3">
+                        <div class="chart-container">
+                            <canvas id="importanceChart"></canvas>
+                        </div>
+                    </div>
+                    <div id="sizeText" class="md:col-span-2 space-y-4">
+                        <h3 class="font-bold text-lg">A Quick Gauge of Size</h3>
+                        <p class="text-sm text-slate-600">The chart visually compares three hypothetical companies. Even if a small-cap company had a higher stock price per share, its lower number of shares results in a much smaller total market value compared to a large-cap giant.</p>
+                         <h3 class="font-bold text-lg mt-4">Building a Balanced Portfolio</h3>
+                        <p class="text-sm text-slate-600">Investors often use market cap to diversify their holdings. A mix of large-cap (for stability), mid-cap (for balanced growth), and small-cap (for high growth potential) stocks can help manage risk across an entire portfolio.</p>
+                    </div>
+                    <div id="riskText" class="md:col-span-2 space-y-4" style="display: none;">
+                        <h3 class="font-bold text-lg">Indicator of Risk & Growth</h3>
+                        <p class="text-sm text-slate-600">Generally, larger companies are more stable and less risky (like a large ship in a storm), while smaller companies are more volatile but have more room to grow (like a speedboat). The chart illustrates this trade-off.</p>
+                        <ul class="text-sm text-slate-600 space-y-2">
+                           <li><b>Large-Cap:</b> Lower risk, but often slower growth.</li>
+                           <li><b>Mid-Cap:</b> A balance between stability and growth.</li>
+                           <li><b>Small-Cap:</b> Higher growth potential, but comes with higher risk.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="myths" class="content-section">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl md:text-4xl font-bold mb-2">Myths vs. Facts</h2>
+                <p class="max-w-3xl mx-auto text-slate-600">Understanding market cap also means knowing what it *doesn't* represent. Let's clear up a couple of common misconceptions.</p>
+            </div>
+            <div class="grid md:grid-cols-2 gap-8">
+                <div class="bg-white p-6 rounded-2xl shadow-lg border-l-4 border-red-400">
+                    <h3 class="text-xl font-bold mb-4 flex items-center"><span class="text-2xl mr-3">❌</span>Myth: A high stock price means a large company.</h3>
+                    <p class="text-slate-600">A company's size is determined by its market cap, not its share price. A company with a $1,000 stock price but only 1 million shares ($1B market cap) is much smaller than a company with a $10 stock price but 500 million shares ($5B market cap).</p>
+                </div>
+                 <div class="bg-white p-6 rounded-2xl shadow-lg border-l-4 border-red-400">
+                    <h3 class="text-xl font-bold mb-4 flex items-center"><span class="text-2xl mr-3">❌</span>Myth: Market cap is a company's true value.</h3>
+                    <p class="text-slate-600">Market cap is just the value of a company's stock (equity). It doesn't include important factors like a company's debt or cash reserves. A more complete picture is called "Enterprise Value," but market cap is the most common starting point.</p>
+                </div>
+            </div>
+        </section>
+        
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const sharePriceSlider = document.getElementById('sharePrice');
+            const sharesSlider = document.getElementById('outstandingShares');
+            const sharePriceValue = document.getElementById('sharePriceValue');
+            const sharesValue = document.getElementById('sharesValue');
+            const marketCapResult = document.getElementById('marketCapResult');
+            const formulaText = document.getElementById('formulaText');
+
+            function formatNumber(num) {
+                if (num >= 1e12) {
+                    return '$' + (num / 1e12).toFixed(2) + ' Trillion';
+                }
+                if (num >= 1e9) {
+                    return '$' + (num / 1e9).toFixed(2) + ' Billion';
+                }
+                if (num >= 1e6) {
+                    return '$' + (num / 1e6).toFixed(2) + ' Million';
+                }
+                return '$' + num.toLocaleString();
+            }
+
+            function updateCalculator() {
+                const price = parseFloat(sharePriceSlider.value);
+                const shares = parseFloat(sharesSlider.value) * 1000000;
+                const marketCap = price * shares;
+
+                sharePriceValue.textContent = '$' + price.toLocaleString();
+                sharesValue.textContent = (shares / 1000000).toLocaleString() + ' Million';
+                marketCapResult.textContent = formatNumber(marketCap);
+                formulaText.textContent = `$${price.toLocaleString()} x ${shares.toLocaleString()} shares`;
+            }
+
+            sharePriceSlider.addEventListener('input', updateCalculator);
+            sharesSlider.addEventListener('input', updateCalculator);
+            updateCalculator();
+
+            const exampleToggles = document.querySelectorAll('.toggle-examples');
+            exampleToggles.forEach(button => {
+                button.addEventListener('click', () => {
+                    const examplesDiv = button.nextElementSibling;
+                    const isHidden = examplesDiv.classList.contains('hidden');
+                    if (isHidden) {
+                        examplesDiv.classList.remove('hidden');
+                        button.textContent = 'Hide Examples';
+                    } else {
+                        examplesDiv.classList.add('hidden');
+                        button.textContent = 'Show Examples';
+                    }
+                });
+            });
+
+            const navButtons = document.querySelectorAll('.nav-button');
+            const contentSections = document.querySelectorAll('.content-section');
+            navButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const targetId = button.dataset.target;
+                    
+                    navButtons.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+
+                    contentSections.forEach(section => {
+                        if (section.id === targetId) {
+                            section.classList.add('active');
+                        } else {
+                            section.classList.remove('active');
+                        }
+                    });
+                });
+            });
+
+            const ctx = document.getElementById('importanceChart').getContext('2d');
+            let importanceChart;
+            const sizeData = {
+                labels: ['Small-Cap Co.', 'Mid-Cap Co.', 'Large-Cap Co.'],
+                datasets: [{
+                    label: 'Market Cap ($ Billions)',
+                    data: [1, 5, 500],
+                    backgroundColor: ['#f87171', '#fbbf24', '#60a5fa'],
+                    borderColor: ['#ef4444', '#f59e0b', '#3b82f6'],
+                    borderWidth: 1
+                }]
+            };
+
+            const riskData = {
+                 datasets: [{
+                    label: 'Small-Cap',
+                    data: [{ x: 8, y: 8, r: 10 }],
+                    backgroundColor: '#f87171'
+                }, {
+                    label: 'Mid-Cap',
+                    data: [{ x: 5, y: 5, r: 20 }],
+                    backgroundColor: '#fbbf24'
+                }, {
+                    label: 'Large-Cap',
+                    data: [{ x: 2, y: 2, r: 30 }],
+                    backgroundColor: '#60a5fa'
+                }]
+            };
+            
+            const sizeConfig = {
+                type: 'bar',
+                data: sizeData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y',
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'Market Cap ($ Billions)' }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        title: { display: true, text: 'Relative Size Comparison' }
+                    }
+                }
+            };
+            
+            const riskConfig = {
+                type: 'bubble',
+                data: riskData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            min: 0, max: 10,
+                            title: { display: true, text: 'Stability (Lower is More Stable)'}
+                        },
+                        y: {
+                           min: 0, max: 10,
+                           title: { display: true, text: 'Growth Potential'}
+                        }
+                    },
+                     plugins: {
+                        legend: { position: 'top' },
+                        title: { display: true, text: 'Risk vs. Growth Potential (Bubble size = Market Cap)' },
+                        tooltip: {
+                             callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label;
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+
+            function createChart(config) {
+                if (importanceChart) {
+                    importanceChart.destroy();
+                }
+                importanceChart = new Chart(ctx, config);
+            }
+
+            createChart(sizeConfig);
+
+            const sizeViewBtn = document.getElementById('sizeViewBtn');
+            const riskViewBtn = document.getElementById('riskViewBtn');
+            const sizeText = document.getElementById('sizeText');
+            const riskText = document.getElementById('riskText');
+            
+            sizeViewBtn.addEventListener('click', () => {
+                createChart(sizeConfig);
+                sizeViewBtn.classList.add('bg-white', 'text-blue-600', 'shadow');
+                riskViewBtn.classList.remove('bg-white', 'text-blue-600', 'shadow');
+                sizeText.style.display = 'block';
+                riskText.style.display = 'none';
+            });
+            
+            riskViewBtn.addEventListener('click', () => {
+                createChart(riskConfig);
+                riskViewBtn.classList.add('bg-white', 'text-blue-600', 'shadow');
+                sizeViewBtn.classList.remove('bg-white', 'text-blue-600', 'shadow');
+                sizeText.style.display = 'none';
+                riskText.style.display = 'block';
+            });
+        });
+    </script>
+</body>
+</html>
